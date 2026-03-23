@@ -3,6 +3,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import io
+import json
+from datetime import datetime
 
 st.set_page_config(page_title="Dashboard Municipios Colombia", layout="wide")
 
@@ -27,7 +29,7 @@ with col1:
     else:
         st.warning("⚠️ Por favor carga el archivo MunicipiosVeredas.csv")
 
-    st.markdown("### 🎤 Entrada de Audio")
+    st.markdown("### 🎤 Entrada de Audio y Transcripción")
 
     col_aud_btn, col_aud_status = st.columns([1, 2])
 
@@ -46,12 +48,120 @@ with col1:
             st.warning("Audio: DESHABILITADO")
 
     if st.session_state.get("audio_enabled", False):
-        audio_input = st.audio_input("Graba un audio con observaciones")
+        audio_input = st.audio_input("🎙️ Graba un audio con observaciones")
         if audio_input:
             st.audio(audio_input)
-            st.success("Audio registrado")
+            st.success("✅ Audio registrado exitosamente")
     else:
         st.info("El audio está deshabilitado. Presiona 'Habilitar Audio' para activar.")
+
+    st.markdown("---")
+    st.markdown("#### 📝 Transcripción y Traducción")
+
+    col_lang1, col_lang2 = st.columns(2)
+
+    with col_lang1:
+        idioma_origen = st.selectbox(
+            "🌐 Idioma de origen (Audio)",
+            ["Español", "Inglés", "Francés", "Portugués", "Alemán", "Italiano"],
+            index=0,
+        )
+
+    with col_lang2:
+        idioma_traduccion = st.selectbox(
+            "🌍 Idioma de traducción",
+            [
+                "Español",
+                "Inglés",
+                "Francés",
+                "Portugués",
+                "Alemán",
+                "Italiano",
+                "Chino",
+                "Japonés",
+            ],
+            index=1,
+        )
+
+    transcripcion = st.text_area(
+        "✏️ Texto transcrito / Traducción",
+        value=st.session_state.get("transcripcion_texto", ""),
+        placeholder="Escribe o pega aquí la transcripción del audio...",
+        height=150,
+    )
+
+    if transcripcion:
+        st.session_state.transcripcion_texto = transcripcion
+
+    col_action1, col_action2, col_action3 = st.columns(3)
+
+    with col_action1:
+        btn_traducir = st.button("🔄 Traducir Texto", use_container_width=True)
+
+    with col_action2:
+        btn_guardar = st.button("💾 Guardar Transcripción", use_container_width=True)
+
+    with col_action3:
+        btn_exportar_json = st.button("📤 Exportar a JSON", use_container_width=True)
+
+    if btn_traducir and transcripcion:
+        st.session_state.transcripcion_texto = (
+            f"[{idioma_origen} → {idioma_traduccion}] {transcripcion}"
+        )
+        st.success(
+            f"✅ Texto marcado como traducido de {idioma_origen} a {idioma_traduccion}"
+        )
+        st.rerun()
+
+    if btn_guardar and transcripcion:
+        st.success("💾 Transcripción guardada en sesión")
+
+    if btn_exportar_json:
+        datos_json = {
+            "metadata": {
+                "fecha_creacion": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "idioma_origen": idioma_origen,
+                "idioma_traduccion": idioma_traduccion,
+                "usuario": "Dashboard Municipios Colombia",
+            },
+            "audio": {
+                "habilitado": st.session_state.get("audio_enabled", False),
+                "transcripcion": transcripcion,
+            },
+            "datos_csv": {
+                "total_registros": len(st.session_state.data)
+                if st.session_state.data is not None
+                else 0,
+                "fecha_analisis": datetime.now().strftime("%Y-%m-%d"),
+            },
+            "transcripcion": {
+                "texto_original": transcripcion,
+                "traduccion": f"{idioma_origen} → {idioma_traduccion}",
+                "fecha_transcripcion": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        }
+
+        json_data = json.dumps(datos_json, indent=4, ensure_ascii=False)
+        st.download_button(
+            label="⬇️ Descargar archivo JSON",
+            data=json_data,
+            file_name=f"transcripcion_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+            mime="application/json",
+        )
+        st.success("📤 Archivo JSON generado exitosamente")
+
+    if transcripcion:
+        st.markdown("---")
+        st.markdown("#### 📄 Vista Previa JSON")
+        datos_preview = {
+            "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "idioma_origen": idioma_origen,
+            "idioma_traduccion": idioma_traduccion,
+            "transcripcion": transcripcion[:100] + "..."
+            if len(transcripcion) > 100
+            else transcripcion,
+        }
+        st.json(datos_preview)
 
 with col2:
     st.header(":art: Configuración de Visualización")
@@ -393,5 +503,3 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
-import io
