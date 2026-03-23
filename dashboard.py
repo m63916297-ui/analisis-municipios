@@ -11,6 +11,12 @@ st.markdown("---")
 if "data" not in st.session_state:
     st.session_state.data = None
 
+if "camera_enabled" not in st.session_state:
+    st.session_state.camera_enabled = False
+
+if "audio_enabled" not in st.session_state:
+    st.session_state.audio_enabled = False
+
 col1, col2 = st.columns([1, 1])
 
 with col1:
@@ -27,16 +33,54 @@ with col1:
         st.warning("Por favor carga el archivo MunicipiosVeredas.csv")
 
     st.markdown("### Captura de Cámara")
-    camera_input = st.camera_input("Toma una foto para el análisis")
-    if camera_input:
-        st.image(camera_input, caption="Imagen capturada")
-        st.success("Imagen procesada")
+
+    col_cam_btn, col_cam_status = st.columns([1, 2])
+
+    with col_cam_btn:
+        if st.button(
+            "📷 Habilitar Cámara", key="btn_camera_toggle", use_container_width=True
+        ):
+            st.session_state.camera_enabled = not st.session_state.camera_enabled
+
+    with col_cam_status:
+        if st.session_state.camera_enabled:
+            st.success("Cámara: HABILITADA")
+        else:
+            st.warning("Cámara: DESHABILITADA")
+
+    if st.session_state.camera_enabled:
+        camera_input = st.camera_input("Toma una foto para el análisis")
+        if camera_input:
+            st.image(camera_input, caption="Imagen capturada")
+            st.success("Imagen procesada")
+    else:
+        st.info(
+            "La cámara está deshabilitada. Presiona 'Habilitar Cámara' para activar."
+        )
 
     st.markdown("### Entrada de Audio")
-    audio_input = st.audio_input("Graba un audio con observaciones")
-    if audio_input:
-        st.audio(audio_input)
-        st.success("Audio registrado")
+
+    col_aud_btn, col_aud_status = st.columns([1, 2])
+
+    with col_aud_btn:
+        if st.button(
+            "🎤 Habilitar Audio", key="btn_audio_toggle", use_container_width=True
+        ):
+            st.session_state.audio_enabled = not st.session_state.audio_enabled
+
+    with col_aud_status:
+        if st.session_state.audio_enabled:
+            st.success("Audio: HABILITADO")
+        else:
+            st.warning("Audio: DESHABILITADO")
+
+    if st.session_state.audio_enabled:
+        audio_input = st.audio_input("Graba un audio con observaciones")
+        if audio_input:
+            st.audio(audio_input)
+            st.success("Audio registrado")
+    else:
+        st.info("El audio está deshabilitado. Presiona 'Habilitar Audio' para activar.")
 
 with col2:
     st.header("Configuración de Visualización")
